@@ -1,0 +1,41 @@
+# Создаем правильный .gitignore
+cat > .gitignore << EOF
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Project specific (если нужно оставить clubs.db в репозитории, удалите строку выше)
+# clubs.db
+EOF
+
+init_postgres.py
+database.py
+migrate.py
+docker-compose.yml
+
+config.py
+migrate_to_cloud.py
+cloud-certs

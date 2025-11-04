@@ -4,7 +4,7 @@
 """
 
 import telebot
-from telebot import types
+import database
 from shared_functions import show_main_menu
 
 # Импорт модулей
@@ -15,6 +15,7 @@ from modules.profile import register_profile_handlers
 from modules.callbacks import register_callback_handlers
 
 # Инициализация
+database.initialize_database()
 bot = telebot.TeleBot('8362564410:AAEu48q8ps0MjyJf3PYLn_2E8Zj-aY-vDWI')
 user_states = {}
 
@@ -30,7 +31,6 @@ callback_handlers = register_callback_handlers(bot, user_states, search_handlers
 def handle_other_messages(message):
     if message.text == "❌ Отмена":
         bot.send_message(message.chat.id, "Действие отменено", reply_markup=types.ReplyKeyboardRemove())
-        show_main_menu(bot, message.chat.id, "Человек")
     else:
         bot.send_message(message.chat.id, "Используй кнопки меню для навигации 👆")
 

@@ -32,7 +32,6 @@ Thumbs.db
 EOF
 
 init_postgres.py
-database.py
 migrate.py
 docker-compose.yml
 

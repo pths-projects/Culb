@@ -3,6 +3,8 @@
 Регистрирует все обработчики и запускает бота
 """
 
+import os
+from dotenv import load_dotenv
 import telebot
 import database
 from shared_functions import show_main_menu
@@ -14,9 +16,13 @@ from modules.club_creation import register_creation_handlers
 from modules.profile import register_profile_handlers
 from modules.callbacks import register_callback_handlers
 
+# Загружаем переменные окружения из .env файла
+load_dotenv()
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+
 # Инициализация
 database.initialize_database()
-bot = telebot.TeleBot('8362564410:AAEu48q8ps0MjyJf3PYLn_2E8Zj-aY-vDWI')
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
 user_states = {}
 
 # Регистрация всех обработчиков

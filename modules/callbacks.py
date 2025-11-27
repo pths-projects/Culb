@@ -4,6 +4,7 @@
 """
 
 from telebot import types
+import database
 from shared_functions import show_main_menu
 
 def register_callback_handlers(bot, user_states, search_handlers, profile_handlers):
@@ -17,8 +18,11 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
 
         if call.data == "search_all":
             # Поиск всех клубов
-            search_handlers['send_clubs_list'](chat_id, [], "Все активные клубы:")
-            show_main_menu(bot, chat_id, "Человек")
+            clubs = database.get_all_active_clubs(limit=10)
+            search_handlers['send_clubs_list'](chat_id, clubs, "Все активные клубы:")
+
+            user = database.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user['name'])
 
         elif call.data == "search_by_tag":
             # Поиск по тегу
@@ -27,22 +31,35 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
 
         elif call.data == "search_by_location":
             # Поиск по локации
+            user = database.get_user_by_tg_id(user_id)
+            default_location = (user['location'] if user['location'] else 'default') if user else ''
+            prompt = "Введите локацию для поиска:"
+            if default_location:
+                prompt += f"\n(или нажмите '📍 Использовать мою локацию' - {default_location})"
+
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-            markup.add(types.KeyboardButton("📍 Использовать Москву"))
+            if default_location:
+                markup.add(types.KeyboardButton("📍 Использовать мою локацию"))
             markup.add(types.KeyboardButton("❌ Отмена"))
 
-            msg = bot.send_message(chat_id, "Введите город для поиска:", reply_markup=markup)
-            bot.register_next_step_handler(msg, process_location_search, "Москва")
+            msg = bot.send_message(chat_id, prompt, reply_markup=markup)
+            bot.register_next_step_handler(msg, process_location_search, default_location)
 
         elif call.data.startswith("join_"):
             # Вступление в клуб
-            search_handlers['join_club'](user_id, chat_id, 1)
-            show_main_menu(bot, chat_id, "Человек")
+            club_id = int(call.data.split("_")[1])
+            search_handlers['join_club'](user_id, chat_id, club_id)
+
+            user = database.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user['name'])
 
         elif call.data.startswith("club_details_"):
             # Просмотр деталей клуба
-            search_handlers['show_club_details'](chat_id, 1)
-            show_main_menu(bot, chat_id, "Человек")
+            club_id = int(call.data.split("_")[2])
+            search_handlers['show_club_details'](chat_id, club_id)
+
+            user = database.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user['name'])
 
         elif call.data == "edit_profile":
             # Редактирование профиля
@@ -51,21 +68,28 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
     def process_tag_search(message):
         """Обрабатывает поиск по тегу"""
         tag = message.text.strip()
-        search_handlers['send_clubs_list'](message.chat.id, [], f"Результаты поиска по тегу '{tag}':")
-        show_main_menu(bot, message.chat.id, "Человек")
+        clubs = database.search_clubs_by_tag(tag)
+        search_handlers['send_clubs_list'](message.chat.id, clubs, f"Результаты поиска по тегу '{tag}':")
+
+        user = database.get_user_by_tg_id(message.from_user.id)
+        show_main_menu(bot, message.chat.id, user['name'])
 
     def process_location_search(message, default_location):
         """Обрабатывает поиск по локации"""
         location = message.text.strip()
 
-        if location == "📍 Использовать Москву":
-            location = "Москва"
+        if location == "📍 Использовать мою локацию" and default_location:
+            location = default_location
         elif location == "❌ Отмена":
             bot.send_message(message.chat.id, "Поиск отменен", reply_markup=types.ReplyKeyboardRemove())
-            show_main_menu(bot, message.chat.id, "Человек")
+
+            user = database.get_user_by_tg_id(message.from_user.id)
+            show_main_menu(bot, message.chat.id, user['name'])
             return
 
-        search_handlers['send_clubs_list'](message.chat.id, [], f"Результаты поиска по локации '{location}':")
-        show_main_menu(bot, message.chat.id, "Человек")
+        clubs = database.search_clubs_by_location(location)
+        search_handlers['send_clubs_list'](message.chat.id, clubs, f"Результаты поиска по локации '{location}':")
 
+        user = database.get_user_by_tg_id(message.from_user.id)
+        show_main_menu(bot, message.chat.id, user['name'])
     return {}

@@ -4,6 +4,7 @@ cat > .gitignore << EOF
 .venv/
 venv/
 env/
+.env
 
 # Python cache
 __pycache__/
@@ -32,7 +33,6 @@ Thumbs.db
 EOF
 
 init_postgres.py
-database.py
 migrate.py
 docker-compose.yml
 

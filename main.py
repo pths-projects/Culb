@@ -6,8 +6,11 @@
 import os
 from dotenv import load_dotenv
 import telebot
-import database
-from shared_functions import show_main_menu
+from telebot import types
+
+# Инициализация базы данных
+from utils.databases import make_engine
+from orm_models.users import Base
 
 # Импорт модулей
 from modules.registration import register_registration_handlers
@@ -15,13 +18,21 @@ from modules.club_search import register_search_handlers
 from modules.club_creation import register_creation_handlers
 from modules.profile import register_profile_handlers
 from modules.callbacks import register_callback_handlers
+from shared_functions import show_main_menu
 
 # Загружаем переменные окружения из .env файла
 load_dotenv()
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 
+# Инициализация БД
+def initialize_database():
+    """Инициализирует базу данных - создает таблицы если их нет"""
+    engine = make_engine()
+    Base.metadata.create_all(engine)
+    print("✅ База данных инициализирована в облаке (PostgreSQL)")
+
 # Инициализация
-database.initialize_database()
+initialize_database()
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 user_states = {}
 

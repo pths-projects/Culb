@@ -4,7 +4,7 @@
 """
 
 from telebot import types
-import database
+from repositories import user_repo, club_repo
 from shared_functions import show_main_menu
 
 def register_callback_handlers(bot, user_states, search_handlers, profile_handlers):
@@ -18,11 +18,11 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
 
         if call.data == "search_all":
             # Поиск всех клубов
-            clubs = database.get_all_active_clubs(limit=10)
+            clubs = club_repo.get_all_active_clubs(limit=10)
             search_handlers['send_clubs_list'](chat_id, clubs, "Все активные клубы:")
 
-            user = database.get_user_by_tg_id(user_id)
-            show_main_menu(bot, chat_id, user['name'])
+            user = user_repo.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user.name)
 
         elif call.data == "search_by_tag":
             # Поиск по тегу
@@ -31,8 +31,8 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
 
         elif call.data == "search_by_location":
             # Поиск по локации
-            user = database.get_user_by_tg_id(user_id)
-            default_location = (user['location'] if user['location'] else 'default') if user else ''
+            user = user_repo.get_user_by_tg_id(user_id)
+            default_location = user.location if user and user.location else ''
             prompt = "Введите локацию для поиска:"
             if default_location:
                 prompt += f"\n(или нажмите '📍 Использовать мою локацию' - {default_location})"
@@ -50,16 +50,16 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
             club_id = int(call.data.split("_")[1])
             search_handlers['join_club'](user_id, chat_id, club_id)
 
-            user = database.get_user_by_tg_id(user_id)
-            show_main_menu(bot, chat_id, user['name'])
+            user = user_repo.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user.name)
 
         elif call.data.startswith("club_details_"):
             # Просмотр деталей клуба
             club_id = int(call.data.split("_")[2])
             search_handlers['show_club_details'](chat_id, club_id)
 
-            user = database.get_user_by_tg_id(user_id)
-            show_main_menu(bot, chat_id, user['name'])
+            user = user_repo.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user.name)
 
         elif call.data == "edit_profile":
             # Редактирование профиля
@@ -68,11 +68,11 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
     def process_tag_search(message):
         """Обрабатывает поиск по тегу"""
         tag = message.text.strip()
-        clubs = database.search_clubs_by_tag(tag)
+        clubs = club_repo.search_clubs_by_tag(tag)
         search_handlers['send_clubs_list'](message.chat.id, clubs, f"Результаты поиска по тегу '{tag}':")
 
-        user = database.get_user_by_tg_id(message.from_user.id)
-        show_main_menu(bot, message.chat.id, user['name'])
+        user = user_repo.get_user_by_tg_id(message.from_user.id)
+        show_main_menu(bot, message.chat.id, user.name)
 
     def process_location_search(message, default_location):
         """Обрабатывает поиск по локации"""
@@ -82,14 +82,13 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
             location = default_location
         elif location == "❌ Отмена":
             bot.send_message(message.chat.id, "Поиск отменен", reply_markup=types.ReplyKeyboardRemove())
-
-            user = database.get_user_by_tg_id(message.from_user.id)
-            show_main_menu(bot, message.chat.id, user['name'])
+            user = user_repo.get_user_by_tg_id(message.from_user.id)
+            show_main_menu(bot, message.chat.id, user.name)
             return
 
-        clubs = database.search_clubs_by_location(location)
+        clubs = club_repo.search_clubs_by_location(location)
         search_handlers['send_clubs_list'](message.chat.id, clubs, f"Результаты поиска по локации '{location}':")
 
-        user = database.get_user_by_tg_id(message.from_user.id)
-        show_main_menu(bot, message.chat.id, user['name'])
+        user = user_repo.get_user_by_tg_id(message.from_user.id)
+        show_main_menu(bot, message.chat.id, user.name)
     return {}

@@ -4,8 +4,9 @@
 """
 
 from telebot import types
-import database
+from repositories import user_repo, member_repo, club_repo
 from shared_functions import show_main_menu
+
 
 def register_profile_handlers(bot, user_states):
     """Регистрирует обработчики профиля"""
@@ -14,21 +15,20 @@ def register_profile_handlers(bot, user_states):
     def show_profile(message):
         """Показывает профиль пользователя"""
         user_id = message.from_user.id
-        user = database.get_user_by_tg_id(user_id)
+        user = user_repo.get_user_by_tg_id(user_id)
 
         if not user:
             bot.send_message(message.chat.id, "Сначала зарегистрируйся через /start")
             return
 
-        # ПРАВИЛЬНОЕ обращение к sqlite3.Row объекту
         response = f"👤 Твой профиль:\n\n"
-        response += f"Имя: {user['name']}\n"
-        response += f"Локация: {user['location'] if user['location'] else 'Не указана'}\n"
-        response += f"Интересы: {user['interests'] if user['interests'] else 'Не указаны'}\n\n"
+        response += f"Имя: {user.name}\n"
+        response += f"Локация: {user.location if user.location else 'Не указана'}\n"
+        response += f"Интересы: {user.interests if user.interests else 'Не указаны'}\n\n"
 
         # Статистика
-        user_clubs = database.get_user_clubs(user_id)
-        owned_clubs = database.get_clubs_by_owner(user_id)
+        user_clubs = member_repo.get_user_clubs(user_id)
+        owned_clubs = club_repo.get_clubs_by_owner(user_id)
 
         response += f"📊 Статистика:\n"
         response += f"• Создано клубов: {len(owned_clubs)}\n"
@@ -59,8 +59,8 @@ def register_profile_handlers(bot, user_states):
 
         if choice == "❌ Отмена":
             bot.send_message(chat_id, "Редактирование отменено", reply_markup=types.ReplyKeyboardRemove())
-            user = database.get_user_by_tg_id(user_id)
-            show_main_menu(bot, message.chat.id, user['name'])
+            user = user_repo.get_user_by_tg_id(user_id)
+            show_main_menu(bot, message.chat.id, user.name)
             return
         elif choice == "✏️ Изменить имя":
             msg = bot.send_message(chat_id, "Введите новое имя:", reply_markup=types.ReplyKeyboardRemove())
@@ -76,34 +76,33 @@ def register_profile_handlers(bot, user_states):
     def process_new_name(message, user_id):
         """Обрабатывает изменение имени"""
         new_name = message.text.strip()
-        if database.update_user(user_id, name=new_name):
+        if user_repo.update_user(user_id, name=new_name):
             bot.send_message(message.chat.id, f"✅ Имя успешно изменено на {new_name}!")
-
         else:
             bot.send_message(message.chat.id, "❌ Не удалось изменить имя")
 
-        user = database.get_user_by_tg_id(user_id)
-        show_main_menu(bot, message.chat.id, user['name'])
+        user = user_repo.get_user_by_tg_id(user_id)
+        show_main_menu(bot, message.chat.id, user.name)
 
     def process_new_location(message, user_id):
         """Обрабатывает изменение локации"""
         new_location = message.text.strip()
-        if database.update_user(user_id, location=new_location):
+        if user_repo.update_user(user_id, location=new_location):
             bot.send_message(message.chat.id, f"✅ Локация успешно изменена на {new_location}!")
         else:
             bot.send_message(message.chat.id, "❌ Не удалось изменить локацию")
-        user = database.get_user_by_tg_id(user_id)
-        show_main_menu(bot, message.chat.id, user['name'])
+        user = user_repo.get_user_by_tg_id(user_id)
+        show_main_menu(bot, message.chat.id, user.name)
 
     def process_new_interests(message, user_id):
         """Обрабатывает изменение интересов"""
         new_interests = message.text.strip()
-        if database.update_user(user_id, interests=new_interests):
+        if user_repo.update_user(user_id, interests=new_interests):
             bot.send_message(message.chat.id, f"✅ Интересы успешно обновлены!")
         else:
             bot.send_message(message.chat.id, "❌ Не удалось изменить интересы")
-        user = database.get_user_by_tg_id(user_id)
-        show_main_menu(bot, message.chat.id, user['name'])
+        user = user_repo.get_user_by_tg_id(user_id)
+        show_main_menu(bot, message.chat.id, user.name)
 
     return {
         'start_edit_profile': start_edit_profile

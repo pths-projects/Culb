@@ -4,7 +4,7 @@
 """
 
 from telebot import types
-import database
+from repositories import user_repo, club_repo
 from shared_functions import validate_name, validate_description, validate_telegram_link
 
 
@@ -15,9 +15,9 @@ def register_creation_handlers(bot, user_states, show_main_menu_func):
     def start_create_club(message):
         """Начинает процесс создания клуба"""
         user_id = message.from_user.id
-        user = database.get_user_by_tg_id(user_id)
+        user = user_repo.get_user_by_tg_id(user_id)
 
-        if not user or not user['location']:
+        if not user or not user.location:
             # Если нет локации, запрашиваем ее
             msg = bot.send_message(message.chat.id, "📝 Для создания клуба нужна твоя локация. Введи свой город:")
             bot.register_next_step_handler(msg, process_immediate_location)
@@ -33,7 +33,7 @@ def register_creation_handlers(bot, user_states, show_main_menu_func):
         location = message.text.strip()
         user_id = message.from_user.id
 
-        if database.update_user(user_id, location=location):
+        if user_repo.update_user(user_id, location=location):
             bot.send_message(message.chat.id, "✅ Локация сохранена! Теперь можно создать клуб.")
             start_create_club(message)  # Возвращаем к созданию клуба
         else:
@@ -79,8 +79,8 @@ def register_creation_handlers(bot, user_states, show_main_menu_func):
 
         if user_id in user_states:
             user_states[user_id]['data']['tags'] = tags
-            user = database.get_user_by_tg_id(user_id)
-            default_location = user['location'] if user['location'] else 'default'
+            user = user_repo.get_user_by_tg_id(user_id)
+            default_location = user.location if user.location else 'default'
 
             msg = bot.send_message(message.chat.id, f"Где будут проходить встречи? (по умолчанию: {default_location})")
             bot.register_next_step_handler(msg, process_club_location)
@@ -94,8 +94,8 @@ def register_creation_handlers(bot, user_states, show_main_menu_func):
             # Если пользователь просто нажал Enter или ввёл пустую строку,
             # используем локацию пользователя по умолчанию
             if not location:
-                user = database.get_user_by_tg_id(user_id)
-                location = user['location'] if user and user['location'] else 'Не указана'
+                user = user_repo.get_user_by_tg_id(user_id)
+                location = user.location if user and user.location else 'Не указана'
 
             user_states[user_id]['data']['location'] = location
 
@@ -117,24 +117,21 @@ def register_creation_handlers(bot, user_states, show_main_menu_func):
             club_data = user_states[user_id]['data']
 
             # Создаем клуб в БД
-            club_id = database.create_club(
+            club_id = club_repo.create_club(
                 owner_id=user_id,
                 name=club_data['name'],
                 description=club_data['description'],
                 tags=club_data['tags'],
-                location=club_data['location'] if club_data['location'] else 'Не указана',
+                location=club_data.get('location', 'Не указана'),
                 chat_link=chat_link
             )
-
-            # Добавляем создателя в участники
-            database.add_member_to_club(user_id, club_id)
 
             # Очищаем состояние
             del user_states[user_id]
 
             # Показываем главное меню
-            user = database.get_user_by_tg_id(user_id)
-            show_main_menu_func(bot, message.chat.id, user['name'])
+            user = user_repo.get_user_by_tg_id(user_id)
+            show_main_menu_func(bot, message.chat.id, user.name)
             bot.send_message(message.chat.id, f"🎉 Поздравляю! Твой клуб '{club_data['name']}' создан!")
 
     return {}

@@ -1,0 +1,10 @@
+services:
+  my_app:
+    #profiles: ["app", "all"]
+    build:
+      dockerfile: Dockerfile
+      context: .
+      #target: app
+    restart: unless-stopped
+    env_file:
+       - ./.env

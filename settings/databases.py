@@ -29,12 +29,4 @@ class DatabaseSettings(BaseSettings):
         )
 
 
-# Конфигурация из твоего config.py
-database_settings = DatabaseSettings(
-    host='80b82e2fe4853703fb651141.twc1.net',
-    port=5432,
-    name='default_db',
-    user='gen_user',
-    password='gNS<h=d5gmiUXJ',
-    driver='postgresql+psycopg2'
-)
+database_settings = DatabaseSettings()

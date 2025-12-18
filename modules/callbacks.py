@@ -24,6 +24,14 @@ def register_callback_handlers(bot, user_states, search_handlers, profile_handle
             user = user_repo.get_user_by_tg_id(user_id)
             show_main_menu(bot, chat_id, user.name)
 
+        elif call.data == "search_random":
+            # Случайный клуб (балванка)
+            clubs = club_repo.get_all_active_clubs(limit=1)
+            search_handlers['send_clubs_list'](chat_id, clubs, "Последний созданный клуб:")
+
+            user = user_repo.get_user_by_tg_id(user_id)
+            show_main_menu(bot, chat_id, user.name)
+
         elif call.data == "search_by_tag":
             # Поиск по тегу
             msg = bot.send_message(chat_id, "Введите тег для поиска (например: #игры, #спорт, #it):")
